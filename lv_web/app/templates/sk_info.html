@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>无标题页</title>
+	<link href="css/mui.min.css" />
+</head>
+<link href="static/css/mui.min.css" rel="stylesheet"/>
+
+<style>
+	.point{
+		height:50px;
+		width:50px;
+		border: 3px solid #fff;
+		border-radius:50% ; 
+		position:absolute;
+		color:#aaa;
+		border-color: #000 #fff #000 #fff ;
+		z-index: 1;
+	} 
+	.line{
+		position:absolute; 
+		height:5px; 
+	}
+	#points{
+		margin-left: 5%;
+		width: 90%;
+		position: relative;
+	} 
+	.word{
+		width: 50px;
+		margin-top: 20px;
+		margin-left:-10px;
+		font-size: 15px;
+	}
+	.eword{
+		width: 80px;
+		margin-left:-10px;
+		font-size: 15px;
+	}
+	.butt{
+		margin-top:10px;
+		/*display: none;*/
+	} 
+	#butt{
+		/*margin-top:80%;*/ 
+		height:60px;
+		width:100px;
+		font-size: 20px;
+		font-weight: 600;
+	}
+	.res{
+		margin-top:60px;
+		padding-left:10px ;
+	}
+	#remind{
+		font-size:40px;
+		font-weight:600;
+		margin-top:40px;
+		margin-bottom:20px;
+		display:none;
+		line-height:40px;
+	}
+</style>
+
+<body>
+        <!-- 主页面容器 -->
+    <div class="mui-inner-wrap"> 
+
+	    <!-- 主页面标题 -->
+	    <header class="mui-bar mui-bar-nav" style="background-color: rgba(254, 130, 16, 1);">
+	      <!--<a class="mui-icon mui-icon-left-nav mui-pull-left mui-action-back" style="color: #FFFFFF;"></a>-->
+	      <h1 class="mui-title" style="color: #FFFFFF;font-size: 22.5px;"><b>lv</b></h1>
+	    </header>
+	    <!-- 主页面内容容器 -->
+	    <div class="mui-button-row res" id='push'>
+	        <p>"完成图片"可以直接上传识别</p>
+	        <p>"原始图片"必须从左上角开始，顺时针方向点击图片选取四个点,每两点连线与logo平行或垂直。</p>
+	        <p>点击下载<a href="static/wImgs/finish_images.zip"> 完成图片</a> <b>l</b> 点击下载<a href="static/wImgs/original_images.zip"> 原始图片 </a></p>
+            <input type="file" name="FileUpload" id="FileUpload">
+		    <button class="butt" id="before_doing" onclick="resImage()" >完成</button>
+			<span class="butt" id="is_doing" style="display:none">正在上传识别请稍后...</span>	
+            <div class="butt" style="font-size: 13px;margin-top: 5px;"></div> 
+	    </div>
+		<div id="points">
+			<img id="image"  style="width:100%;"/>
+		</div>
+		<div class="mui-card res" id="res" style="width:92%;margin-left:3%;" >
+			<center><div id="remind"></div> </center>
+			<div id="result"></div>
+		</div>
+
+	</div>
+</body>
+
+<script src="static/js/jquery.js"></script>
+<script src="static/js/drag.js"></script>
+<script src="static/js/ajaxfileupload.js"></script>
+<script src="static/js/mui.min.js"></script>
+<script src="static/js/jquery-ui.js"></script>
+<script language="javascript">
+
+function toTop(){
+
+}
+	
+	function addImg(){
+		html="<img class='point' id='point0' src='static/wImgs/point0.png' onmouseover='mouseMove(this)'  />\
+			<img class='point' id='point1' src='static/wImgs/point1.png' onmouseover='mouseMove(this)' />\
+			<img class='point' id='point2' src='static/wImgs/point2.png' onmouseover='mouseMove(this)'  />\
+			<img class='point' id='point3' src='static/wImgs/point3.png' onmouseover='mouseMove(this)' />\
+			<img class='line' id='line0' src='static/wImgs/line.png' />\
+			<img class='line' id='line1' src='static/wImgs/line.png' />\
+			<img class='line' id='line2' src='static/wImgs/line.png' />\
+			<img class='line' id='line3' src='static/wImgs/line.png' />"
+		$('#points').append(html)
+
+		addLine();
+		move();
+	}
+	//  真实图:缩略图 w宽的比，h高的比
+	var rad =new Array();
+	var img =new Array();
+	//拖动时，点的前一个与后一个id
+	var point=[[3,1],[0,2],[1,3],[2,0]];
+	//拖动时，线的前一个与后一个id
+	var line = [[3,0],[0,1],[1,2],[2,3]];
+	
+	function move(){
+	    var moveFlag = 0; // 是否移动的flag
+	    // /iPad|iPhone|Android/.test( navigator.userAgent ) &&
+	    (function ($) {
+	    	
+			//拖动时，点的前一个与后一个id
+			var point=[[3,1],[0,2],[1,3],[2,0]];
+			//拖动时，线的前一个与后一个id
+			var line = [[3,0],[0,1],[1,2],[2,3]];
+			
+			var end_x=null;
+			var end_y=null;
+			var start_x=null;
+			var start_y=null;
+			
+	        var proto = $.ui.mouse.prototype, _mouseInit = proto._mouseInit;
+	        console.log(proto)
+	        $.extend(proto, {
+	            _mouseInit: function () {
+	            	console.log(this.widgetName)
+	                this.element.bind("touchstart." + this.widgetName, $.proxy(this, "_touchStart"));
+	                _mouseInit.apply(this, arguments);
+	            }, _touchStart: function (event) {
+	                this.element.bind("touchmove." + this.widgetName, $.proxy(this, "_touchMove")).bind("touchend." + this.widgetName, $.proxy(this, "_touchEnd"));
+	                this._modifyEvent(event);
+	                $(document).trigger($.Event("mouseup"));
+	                //reset mouseHandled flag in ui.mouse
+	                this._mouseDown(event);
+					
+	                //--------------------触摸开始事件--------------------       
+	
+	            }, _touchMove: function (event) {
+	                moveFlag = 1;
+	                this._modifyEvent(event);
+	                this._mouseMove(event);
+	
+	                //--------------------触摸时事件--------------------
+	                
+					id_num=event.target.id.charAt(event.target.id.length-1)*1;
+					
+					//点的数据计算
+					this_left=$("#"+event.target.id).css("left");
+					this_top=$("#"+event.target.id).css("top");
+					o_x=this_left.substr(0,this_left.length-2)*1+25;
+					o_y=this_top.substr(0,this_top.length-2)*1+25;					
+					
+					before_line_move(id_num,o_x,o_y);
+					after_line_move(id_num,o_x,o_y);
+	                
+	                console.log("i touchMove!");
+	
+	            }, _touchEnd: function (event) {
+	                // 主动触发点击事件
+	                if (moveFlag == 0) {
+	                    var evt = document.createEvent('Event');
+	                    evt.initEvent('click', true, true);
+	                    this.handleElement[0].dispatchEvent(evt);
+	                }
+	                this.element.unbind("touchmove." + this.widgetName).unbind("touchend." + this.widgetName);
+	                this._mouseUp(event);
+	                moveFlag = 0;
+	
+	                //--------------------触摸结束事件--------------------
+	                
+					id_num=event.target.id.charAt(event.target.id.length-1)*1;
+					
+					//点的数据计算
+					this_left=$("#"+event.target.id).css("left");
+					this_top=$("#"+event.target.id).css("top");
+					x = this_left.substr(0,this_left.length-2)*1+25;
+					y = this_top.substr(0,this_top.length-2)*1+25;
+					relX = Math.round(rad["w"]*x);
+					relY = Math.round(rad["h"]*y);
+					console.log("前："+relP);
+					console.log("前："+P);
+					relP[id_num]=[relX,relY];
+					P[id_num]=[x,y];
+					console.log("后："+relP);
+					console.log("后："+P);
+	
+	            }, _modifyEvent: function (event) {
+	                event.which = 1;
+	                var target = event.originalEvent.targetTouches[0];
+	                event.pageX = target.clientX;
+	                event.pageY = target.clientY;
+	            }
+	        });
+	    })(jQuery);
+	    $( "#point0").draggable({ containment: "#points", scroll: false });
+	    $( "#point1").draggable({ containment: "#points", scroll: false });
+	    $( "#point2").draggable({ containment: "#points", scroll: false });
+	    $( "#point3").draggable({ containment: "#points", scroll: false });
+	}
+
+	function mouseMove(thisImg){
+		var end_x=null;
+		var end_y=null;
+		var start_x=null;
+		var start_y=null;
+		id_num=thisImg.id.charAt(thisImg.id.length-1)*1;
+		
+		//点的数据计算
+		this_left=$(thisImg).css("left");
+		this_top=$(thisImg).css("top");
+		o_x=this_left.substr(0,this_left.length-2)*1;
+		o_y=this_top.substr(0,this_top.length-2)*1;
+		
+		var change=25;
+		
+		$(thisImg).myDrag({
+			o_x:o_x,
+			o_y:o_y,
+			dragStart:function(x,y){
+				start_x=x;
+				start_y=y;
+			},
+			dragEnd:function(x,y){
+				relX = Math.round(rad["w"]*(x+change));
+				relY = Math.round(rad["h"]*(y+change));
+				relP[id_num]=[relX,relY];
+				P[id_num]=[x+change,y+change];
+				
+			},
+			dragMove:function(x,y){
+				var after_point_id = point[id_num][1]
+				var before_point_id = point[id_num][0]
+				
+				before_line_move(id_num,x+change,y+change);
+				after_line_move(id_num,x+change,y+change);
+			}
+		});		
+	}
+
+	//线的移动与数据计算---点后线
+	function after_line_move(id_num,x,y){
+		var after_point_id = point[id_num][1]
+		var after_x_dic = x-P[after_point_id][0];
+		var after_y_dic = y-P[after_point_id][1];
+		var after_line_length = Math.sqrt(Math.pow(after_x_dic,2)+Math.pow(after_y_dic,2));
+		var after_line_x = P[after_point_id][0]-(after_line_length-after_x_dic)/2
+		var after_angle = Math.atan(after_y_dic/after_x_dic)*180/Math.PI;
+		$("#line"+line[id_num][1]).css({'left':after_line_x,'top':((y+P[after_point_id][1])/2),'width':(after_line_length),"transform":"rotate("+after_angle+"deg)"});
+	}
+	//线的移动与数据计算---点前线
+	function before_line_move(id_num,x,y){
+		var before_point_id = point[id_num][0]
+		var before_x_dic = x-P[before_point_id][0];
+		var before_y_dic = y-P[before_point_id][1];
+		var before_line_length = Math.sqrt(Math.pow(before_x_dic,2)+Math.pow(before_y_dic,2));
+		var before_line_x = P[before_point_id][0]-(before_line_length-before_x_dic)/2
+		var before_angle = Math.atan(before_y_dic/before_x_dic)*180/Math.PI;
+		$("#line"+line[id_num][0]).css({'left':before_line_x,'top':((y+P[before_point_id][1])/2),'width':(before_line_length),"transform":"rotate("+before_angle+"deg)"});
+	}
+
+
+	function addLine(){
+		var w = $("#image").css("width");
+		var h = $("#image").css("height");
+		var imgSrc = $("#image").attr("src");
+		
+		w=w.substring(0,w.length-2)*1;
+		h=h.substring(0,h.length-2)*1;
+		
+		getImageWidth(imgSrc,function(ow,oh){
+			rad["w"]=ow/w;
+			rad["h"]=oh/h;
+			
+			$("#point0").css({left:0,top:0})
+			$("#point1").css({left:w-50,top:0})
+			$("#point2").css({left:w-50,top:h-50})
+			$("#point3").css({left:0,top:h-50})
+			
+			$("#line0").css({left:25,top:25,width:w-50,transform:"rotate(0deg)"})
+			$("#line1").css({left:w-h/2,top:h/2,width:h-50,transform:"rotate(90deg)"})
+			$("#line2").css({left:25,top:h-25,width:w-50,transform:"rotate(180deg)"})
+			$("#line3").css({left:-h/2+50,top:h/2,width:h-50,transform:"rotate(270deg)"})
+			
+			var change = 25;
+			relX=change*rad["w"]
+			relY=change*rad["h"]
+			relXT=(w-change)*rad["w"]
+			relYT=(h-change)*rad["h"]
+			relP=[[relX,relY],[relXT,relY],[relXT,relYT],[relX,relYT]];
+			P=[[change,change],[w-change,change],[w-change,h-change],[change,h-change]];
+			
+		}); 
+	}
+
+url=null;
+//base64
+$("#FileUpload").on("change",headPortraitListener);
+
+/*上传监听*/
+function headPortraitListener(e) {
+    var img = document.getElementById('image');
+      if(window.FileReader) {
+          var file  = e.target.files[0];
+          var reader = new FileReader();
+          if (file && file.type.match('image.*')) {
+              reader.readAsDataURL(file);
+          } else {
+              img.attr('src', '');
+          }
+			reader.onloadend = function (e) {
+			url = reader.result
+			img.setAttribute('src', url);
+			setTimeout(function(){
+				delAll();
+				addImg();
+			},500)
+			
+        }
+      }
+}
+      
+////////////////////////上传识别图片
+        function resImage(){
+            $.ajax({
+			    url:"/sk_push",
+			    async:true,
+			    type:'POST',
+			    dateType:'json',
+			    data:{image:url,points:JSON.stringify(relP)},
+				beforeSend:function(){
+					$("#before_doing").hide();
+					$("#is_doing").show();
+				},
+			    success:function(data){
+				    data = eval(data);
+                    console.log(data);
+                    if(data.res!=-1){
+				     showData(data);
+                    }else{
+                        mui.toast('图片上传错误,请重新尝试',{ duration:'short', type:'div' });
+                    }
+
+			    },
+			    error:function(error){
+				    console.log("请求错误");
+				    $('#result').html("请求错误")
+    				    $("#remind").html("")
+				    mui.toast('请求错误',{ duration:'short', type:'div' });
+
+			    },
+				complete:function(){
+					$("#before_doing").show();
+					$("#is_doing").hide();
+				}
+		    });
+        }
+    //显示识别结果 
+    function showData(data){
+        html = '';
+        html+="<div><center>最相似的正品图片↓↓↓</center></div>";
+	    if(data.best_like_img.charAt(data.best_like_img.length-1)!="0"){
+	        html+="<center><img src='/"+data.best_like_img+"' style='width:50%;'></div></center>";
+	    }
+        html+="<div><center>原图识别结果↓↓↓</center></div>";
+        html+="<center><img id='o_img' src='/"+data.logo_url+"' style='width:50%;'></center>";
+        html+="<center><img src='/"+data.best_like_bw_img+"' style='width:50%;'></center>";
+        html+="<center><img src='/"+data.sk_img+"' style='width:50%;'></center>";
+        html+="<center><img src='/"+data.best_like_sk_img+"' style='width:50%;'></center>";
+        html+="<center><img src='/"+data.aline_sk_img+"' style='width:50%;'></center>";
+	    html+='<ul>';
+		/*html+='<li>形态重合率:'+data.best_result*100+'%</li>';
+		if(data.best_result==0){
+			html+='<li>相似度:0</li>';
+		}else{
+			html+='<li>相似度:'+data.like+'%</li>';
+		}*/
+	    html+='</ul>';
+	    /*html+='<ul>';
+	    html+="<li>O height is : "+data.O_height+" as 1</li>";
+	    html+="<li>D1~D11 1:a:b...:j = "+data.new_p_proportion_1_11+"</li>";
+	    html+="<li>D12 1:k = 1:"+data.p_O_width+"</li>"; 
+	    html+="<li>D13 1:l = 1:"+data.p_N_width+"</li>";
+	    html+="<li>Sum = "+data.new_p_sum+"</li>";
+        html+="</ul>"*/
+        $('#result').html(html)
+
+		var remind='';
+		if(data.best_result>=0.85){
+			remind+='该产品为正品的可能性较大';
+		}else if(data.best_result>=0.8){
+			remind+='该产品为仿品的可能性较大';
+		}else{
+			remind+='照片不清晰或选框不合理,请重新拍摄或选框';
+		}
+        $("#remind").html(remind);
+		$("#remind").show();
+    }
+
+	
+	//获取原图片分辨率
+	function getImageWidth(url,callback){
+		var img = new Image();
+		img.src = url; 
+		// 如果图片被缓存，则直接返回缓存数据
+		if(img.complete){
+		    callback(img.width, img.height);
+		}else{
+	        // 完全加载完毕的事件
+		    img.onload = function(){
+				callback(img.width, img.height);
+		    }
+	   }
+	} 
+	
+
+	
+	//删除所有points\坐标\lines
+	function delAll(){
+		$(".point").remove();
+        $(".line").remove();
+		relP = new Array(); 
+        P = new Array();
+	}
+//$(window).width()
+</script>
+ 
+ 

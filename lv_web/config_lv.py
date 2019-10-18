@@ -1,0 +1,3 @@
+CSRF_ENABLED = False
+SECRET_KEY = "94a08da1fecbb6e8b46990538c7b50b2"
+ALLOWED_EXTENSIONS = set(['png','jpg','JPG','PNG'])

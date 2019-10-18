@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>无标题页</title>
+	<link href="css/mui.min.css" />
+</head>
+<link href="static/css/mui.min.css" rel="stylesheet"/>
+
+<style>
+	.point{
+		height:10px;
+		width:10px;
+		border: 3px solid #000;
+		border-radius:50% ;
+		position:absolute;
+	}
+	#points{
+        padding-left:18%;
+		width: 80%;
+	} 
+	.word{
+		width: 50px;
+		margin-top: 20px;
+		margin-left:-10px;
+		font-size: 15px;
+	}
+	.eword{
+		width: 80px;
+		margin-left:-10px;
+		font-size: 15px;
+	}
+	.butt{
+		margin-top:10px;
+		display: none;
+	} 
+	.res{
+		margin-top:60px;
+	}
+</style>
+<body>
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap"> 
+
+	    <!-- 主页面标题 -->
+	    <header class="mui-bar mui-bar-nav" style="background-color: rgba(254, 130, 16, 1);">
+	      <!--<a class="mui-icon mui-icon-left-nav mui-pull-left mui-action-back" style="color: #FFFFFF;"></a>-->
+	      <h1 class="mui-title" style="color: #FFFFFF;font-size: 22.5px;"><b>lv</b></h1>
+	    </header>
+	    <!-- 主页面内容容器 -->
+	    <div class="mui-button-row res" id='push'>
+	        <p>"完成图片"可以直接上传识别</p>
+	        <p>"原始图片"必须从左上角开始，顺时针方向点击图片选取四个点,每两点连线与logo平行或垂直。</p>
+	        <p>点击下载<a href="static/wImgs/finish_images.zip"> 完成图片</a> l
+	        点击下载<a href="static/wImgs/original_images.zip"> 原始图片 </a></p>
+            <input type="file" name="FileUpload" id="FileUpload">
+		    <button class="butt" onclick="del()">撤销选点</button>	
+		    <button class="butt" onclick="resImage()" >完成</button>	
+            <div class="butt" style="font-size: 13px;margin-top: 5px;"></div> 
+	    </div>
+		<div id="points">
+			<img id="image" src='' onclick="getPosition(this)" style="width:100%"/>
+		</div>
+		<div class="mui-card res" id="res" style="width:62%;margin-left:18%;" >
+			<div id="remind"></div> 
+			<div id="result"></div>
+		</div>  
+	</div>
+</body>
+
+<script src="static/js/jquery.js" ></script>
+<script src="static/js/ajaxfileupload.js"></script>
+<script src="static/js/mui.min.js"></script>
+<script language="javascript">
+
+url=null;
+//base64
+$("#FileUpload").on("change",headPortraitListener);
+
+/*上传监听*/
+function headPortraitListener(e) {
+    var img = document.getElementById('image');
+      if(window.FileReader) {
+          var file  = e.target.files[0];
+          var reader = new FileReader();
+          if (file && file.type.match('image.*')) {
+              reader.readAsDataURL(file);
+          } else {
+              img.css('display', 'none');
+              img.attr('src', '');
+          }
+          reader.onloadend = function (e) {
+          url = reader.result
+          $(".butt").show();
+          img.setAttribute('src', url);
+        }
+      }
+}
+      
+////////////////////////上传识别图片
+        function resImage(){
+            if(relP.length==4){
+                $.ajax({
+				    url:"http://219.218.160.81:15000/appPush",
+				    async:true,
+				    type:'POST',
+				    dateType:'json',
+				    data:{image:url,points:JSON.stringify(relP)},
+				    success:function(data){
+					    mui.toast('识别成功',{ duration:1000, type:'div' });
+					    data = eval(data);
+					    showData(data);
+				    },
+				    error:function(error){
+					    console.log("请求错误");
+					    mui.toast('请求错误',{ duration:'short', type:'div' });
+
+				    }
+			    });
+            }else{
+                alert("必须按照要求选择4个点!")
+            }
+        }
+    //显示识别结果
+    function showData(data){
+        html = '';
+        html+="<img src='http://219.218.160.81:15000/"+data.img_url+"' style='width:100%;'></br></br>";
+        html+="<img src='http://219.218.160.81:15000/"+data.b_w_img_url+"' style='width:100%;'></br></br>";
+        html+="<img src='http://219.218.160.81:15000/"+data.logo_url+"' style='width:100%;'>";
+        if (data.remind==1){
+	    $("#remind").html("recognition right!")
+	    html+='<ul>';
+	    html+="<li>O height is : "+data.O_height+" as 1</li>";
+	    html+="<li>D1~D11 1:a:b...:j = "+data.new_p_proportion_1_11+"</li>";
+	    html+="<li>D12 1:k = 1:"+data.p_O_width+"</li>"; 
+	    html+="<li>D13 1:l = 1:"+data.p_N_width+"</li>";
+	    html+="<li>Sum = "+data.new_p_sum+"</li>";
+           html+="</ul>"
+        }else{
+	    $("#remind").html(data.remind)
+        }
+        $('#result').html(html)
+    }
+		 
+//////////////////////////////////获取点击坐标
+	function mousePosition(ev){
+	  	ev = ev || window.event
+	    if(ev.pageX || ev.pageY){
+	      return {x:ev.pageX, y:ev.pageY};
+	    } 
+	    return {
+	       x:ev.clientX + document.body.scrollLeft - document.body.clientLeft,
+	       y:ev.clientY + document.body.scrollTop  - document.body.clientTop
+	    };
+	}
+	
+	document.onmousemove = mousePosition;
+	
+	function getPosition(el){
+		var p = mousePosition();
+		var x = p.x-el.offsetLeft;
+		var y = p.y-el.offsetTop; 
+		var imgSrc = $("#image").attr("src");
+		getImageWidth(imgSrc,function(w,h){
+			relX = Math.round(w*x/el.width);
+			relY = Math.round(h*y/el.height)
+		}); 
+		addpoints(p.x-5,p.y-5,relX,relY);
+//		console.log("真实坐标：x="+relX+ ", y="+relY)
+	}
+	
+	//获取原图片分辨率
+	function getImageWidth(url,callback){
+		var img = new Image();
+		img.src = url; 
+		// 如果图片被缓存，则直接返回缓存数据
+		if(img.complete){
+		    callback(img.width, img.height);
+		}else{
+	        // 完全加载完毕的事件
+		    img.onload = function(){
+				callback(img.width, img.height);
+		    }
+	   }
+	} 
+	
+	//添加点击的圆圈、信息和坐标点 
+	relP = new Array();
+	function addpoints(x,y,relX,relY){
+		
+		words = ["左上","右上","右下","左下"];
+		ewords = ["Top left","Top right","Bottom right","Bottom left"]
+		var num = $(".point").length;
+		if(num<=3){
+			html = ''; 
+			html += "<div class='point' style='left:"+x+"px;top:"+y+"px;'>";
+			html += "<div class='word'>"+words[num]+"</div>";
+			html += "<div class='eword'>"+ewords[num]+"</div>";
+			html += "</div>"
+			$("#points").append(html);  
+			relP[num]=[relX,relY];   
+		}
+	}
+
+	//删除点
+	function del(){
+		var num = $(".point").length;
+		if(num>0){
+			$(".point")[num-1].remove()
+			relP.pop();
+		}
+		
+	}
+	
+	//删除所有店和坐标
+	function delAll(){
+		$(".point").remove();
+		$(".word").remove();
+		relP = new Array(); 
+	}
+	 
+</script>
+ 
+ 

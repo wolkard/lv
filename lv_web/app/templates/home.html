@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta charset="utf-8" />
+           <title>LV</title>
+    </head>
+    <style>
+        body{
+            padding:2%;
+        }
+        #firstBody{
+            float:left;
+            width:50%;
+        }
+        #secondBody{
+            float:right;
+            width:45%;
+        }
+        .images{
+            margin-left:10%;
+            width:70%;
+        }
+		.video{
+			 margin-left:10%;
+		}
+    </style>
+    <body>
+        <div id="firstBody">
+
+            <h2>使用说明（测试讨论版）</h2><span>注:仅用于lv的logo识别</span>
+            <h3>图片的预处理（某App负责）</h3>
+			<p>处理过程类似于下面视频(↓点击下面视频播放↓)</p>
+			<video class="video" id = "cideoPlay1" width="40%" muted="muted"  type="video/mp4" preload="auto">
+			<source src="static/video/lv.mp4" autostart="false">
+			</video>
+            <p>目的：给定任意一个图片，由于用户拍摄角度和比例难以估计，首先应该将logo还原为正面拍摄的长方形。</p>
+            <p>方法一：App拍摄界面画一个框，要求用户拍摄时对准框。由于某些皮拍角度刁钻，这个在讨论时被否定。</p>
+            <p>方法二：甲方开发App，在app拍摄后让用户标记好四个点，以便App进行图像还原，将logo还原为正面拍摄的长方形。（类似于二维码四周的黑点，因为LVlogo本身不能带黑点）</p>
+
+            <p>具体思路如下：假设我们刚拍摄的图片是这样</p>
+            <img src="static/wImgs/1.png" class="images"/>
+            <p>1.用户标记四个辅助定位角</p>
+            <img src="static/wImgs/2.png" class="images"/>
+            <p>2.通过透视，使四个角选出的区域变成标准长方形</p>
+            <img src="static/wImgs/3.png" class="images"/>
+            <p>3.通过旋转将文字主题部分摆正</p>
+            <img src="static/wImgs/4.png" class="images"/>
+            <p>4.将图片保存发给识别程序后即可进行识别</p>
+            <p>以上由app完成，由于还没有开发app，以上步骤可用photoshop临时代替。</p>
+
+            <h3>图片识别及数值输出（我方负责）</h3>
+            <p>接下来是程序的输出,通过我方提供的简易页面，<b style="color:red;">上传标准化后的图像</b>，识别成功后下面陆续返回三张图片及其计算结果。</p>
+            <img src="static/wImgs/5.png" class="images"/>
+            <p>
+                以上由app完成，由于还没有开发app，以上步骤可用photoshop临时代替。
+            </p>
+            <img src="static/wImgs/6.png" class="images"/>
+            <p>
+                1.用户标记四个辅助定位角
+            </p>
+            <img src="static/wImgs/7.png" class="images"/>
+            <p>三张图片分别为：</p>
+            <p>（1）	原图</p>
+            <p>（2）	经过再次旋转摆正，机器识别出来的图片</p>
+            <p>（3）	取出的第一行logo，用于进行计算</p>
+            <p>计算结果从上到下依次为：</p>
+            <p>（1）	左边O的高度</p>
+            <p>（2）	各个需要测量的字母的笔画宽度与O的高度的比值</p>
+            <p> （3）	O的高度与O的宽度的比值</p>
+            <p>  （4）	O的高度与N的宽度的比值</p>
+            <p>  （5）	Sum为：红色区域的加和</p>
+
+            <img src="static/wImgs/8.png" class="images"/>
+            <p>若识别失败，则返回识别失败的原因及可显示的图片（若到了第三张图出现问题，则显示前两张图片，第三张图片部分空出来）</p>
+
+
+        </div>
+        <div id="secondBody">
+            <div>
+		<p>"完成图片"可以直接上传识别</p>
+		<p>"原始图片"必须按照左侧步骤处理后才可上传识别</p>
+		<p>点击下载<a href="static/wImgs/finish_images.zip"> 完成图片</a> l
+		点击下载<a href="static/wImgs/original_images.zip"> 原始图片 </a></p>
+                <input type="file" name="FileUpload" id="FileUpload">
+                <button onclick = "pushImage()">上传图片</button>
+                <div id="remind"></div>
+            </div>
+            <div id="rremind"></div>
+            <div id='num'></div>
+        </div>
+
+    </body>
+    <script src="static/js/jquery.js"></script>
+    <script>
+		var video1=document.getElementById("cideoPlay1");
+
+		video1.onclick=function(){
+			if(video1.paused){
+				video1.play();
+			}else{
+				video1.pause();
+			}
+		}
+
+	    function get_result(image_name){
+	      /*  $.ajaxSetup({
+	         data:{csrfmiddlewaretoken:'my-token'}
+	       })*/
+
+	        $.ajax({
+		    url:'/lv',
+		    type:'POST',
+		    async:true,
+		    data:{image_name:image_name},
+		    dataType:'json',
+		    success:function(data){
+		        var new_data = eval(data)
+		        num(new_data);
+		    },
+		    error:function(error){
+		        $("#rremind").html("recognition error!")
+		    }
+	        })
+	    }
+
+	    function num(data){
+	        console.log(data)
+
+	        html = '';
+	        html+="<img src='"+data.img_url+"' style='width:80%;'></br></br>";
+	        html+="<img src='"+data.b_w_img_url+"' style='width:80%;'></br></br>";
+	        html+="<img src='"+data.logo_url+"' style='width:80%;'>";
+	        if (data.remind==1){
+		    $("#rremind").html("recognition right!")
+		    html+='<ul>';
+		    html+="<li>O height is : "+data.O_height+" as 1</li>";
+		    html+="<li>D1~D11 1:a:b...:j = "+data.new_p_proportion_1_11+"</li>";
+		    html+="<li>D12 1:k = 1:"+data.p_O_width+"</li>";
+		    html+="<li>D13 1:l = 1:"+data.p_N_width+"</li>";
+		    html+="<li>Sum = "+data.new_p_sum+"</li>";
+	           html+="</ul>"
+	        }else{
+		    $("#rremind").html(data.remind)
+	        }
+	        $('#num').html(html)
+	    }
+
+//        <a href="#res" style="position:fixed;right:0;top:200px;font-size:30px;">botm</a>
+   //     <a href="#push" style="position:fixed;right:0;top:250px;font-size:30px;">顶</a>
+
+	    function pushImage(){
+	       var fileObj = document.getElementById("FileUpload").files[0]; // js 获取文件对象
+	       if (typeof (fileObj) == "undefined" || fileObj.size <= 0) {
+	           alert("请选择图片");
+	           return;
+	       }
+	       var formFile = new FormData();
+	       formFile.append("action", "UploadVMKImagePath");  
+	       formFile.append("file", fileObj); //加入文件对象
+
+	       var data = formFile;
+	       $.ajax({
+	           url: "/push",
+	           data: data,
+	           type: "Post",
+	           dataType: "json",
+		    async:false,
+	           cache: false,//上传文件无需缓存
+	           processData: false,//用于对data参数进行序列化处理 这里必须false
+	           contentType: false, //必须
+	           success: function (data) {
+		        var new_data = eval(data)
+		        if(new_data.result==1){
+		            get_result(new_data.img_name)
+		        }
+		        $("#remind").html(new_data.remind);
+		       
+	           },
+	       })
+	    }
+    </script>
+</html>
